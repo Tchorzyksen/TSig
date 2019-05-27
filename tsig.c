@@ -49,8 +49,11 @@ pid_t create_process(){ // Description of functionality below.
 		fprintf(stderr, "*(fun create_process)\tSomething went wrong\n"); // Display Error Message. 
 	}else if(new_process==0){ // 0 - is returned to child process.
                 // If interruption occurred exit child process with status 1.
-                sig_act.sa_handler=terminate_process;
+                sig_act.sa_handler=SIG_IGN;
                 sigaction(SIGINT, &sig_act, NULL);
+
+		sig_act.sa_handler=terminate_process;
+                sigaction(SIGTERM, &sig_act, NULL);
 
 
 		printf("*(fun create_process)\tChild Process created successfully.\n");
@@ -74,15 +77,18 @@ int children_factory(){
 	for(int created=0; created<NUM_CHILD; created++){ // Create number of children processes defined in NUM_CHILD
 		
 		if(isInterruption==1){
-                        kill(-2, SIGTERM);
-                        return created;
-                }else if ((table[created].id=(int)create_process())<0){ // Store Child Process inside array. Cast pid_t to int.
+                        
+			for(int i=0; i< created; i++)
+				kill(table[i].id, SIGTERM);
+                        
+			return created;
+        }else if ((table[created].id=(int)create_process())<0){ // Store Child Process inside array. Cast pid_t to int.
                 	terminate(); // Terminate already created processes.
 			exit(1); // Exit parent process with code 1.
 		}
 			
 		sleep(PARENT_SLEEP); // sleep parent process for time defined in PARENT_SLEEP, before calling for new process creation.
-        }
+    }
 
 	return NUM_CHILD;
 }
